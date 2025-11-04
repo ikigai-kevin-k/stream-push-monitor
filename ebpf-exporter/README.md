@@ -100,16 +100,75 @@ scrape_configs:
     scrape_interval: 10s
 ```
 
-## 可用的 Metrics
+## Available Metrics
 
-- `jitterbuffer_packet_count_total` - 處理的封包總數
-- `jitterbuffer_delay_avg_seconds` - 平均延遲
-- `jitterbuffer_delay_min_seconds` - 最小延遲
-- `jitterbuffer_delay_max_seconds` - 最大延遲
-- `jitterbuffer_dropped_packets_total` - 丟棄的封包數
-- `jitterbuffer_bytes_total` - 處理的位元組總數
-- `jitterbuffer_buffer_size_packets` - Buffer 大小
-- `jitterbuffer_delay_seconds` - 延遲分佈 (Histogram)
+The following Prometheus metrics are available from the exporter endpoint:
+
+### Counter Metrics
+
+| Metric Name | Type | Description | Labels |
+|-------------|------|-------------|--------|
+| `jitterbuffer_packet_count_total` | Counter | Total number of packets processed by jitterbuffer | `pid`, `function` |
+| `jitterbuffer_dropped_packets_total` | Counter | Total number of dropped packets | `pid`, `function` |
+| `jitterbuffer_bytes_total` | Counter | Total bytes processed by jitterbuffer | `pid`, `function` |
+
+### Gauge Metrics
+
+| Metric Name | Type | Description | Labels |
+|-------------|------|-------------|--------|
+| `jitterbuffer_delay_avg_seconds` | Gauge | Average delay in seconds | `pid`, `function` |
+| `jitterbuffer_delay_min_seconds` | Gauge | Minimum delay in seconds | `pid`, `function` |
+| `jitterbuffer_delay_max_seconds` | Gauge | Maximum delay in seconds | `pid`, `function` |
+| `jitterbuffer_buffer_size_packets` | Gauge | Current buffer size in packets | `pid`, `function` |
+
+### Histogram Metrics
+
+| Metric Name | Type | Description | Labels | Buckets |
+|-------------|------|-------------|--------|---------|
+| `jitterbuffer_delay_seconds` | Histogram | Jitterbuffer processing delay distribution | `pid`, `function` | 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0 |
+
+### Label Descriptions
+
+- **`pid`**: Process ID of the monitored FFmpeg/SRS process
+- **`function`**: Function name being tracked (e.g., `avcodec_send_packet`, `avcodec_receive_frame`, `jitterbuffer_put`, etc.)
+
+### Example PromQL Queries
+
+```promql
+# Total packet count
+jitterbuffer_packet_count_total
+
+# Packet processing rate (packets per second)
+rate(jitterbuffer_packet_count_total[5m])
+
+# Average delay by function
+jitterbuffer_delay_avg_seconds{function="avcodec_send_packet"}
+
+# 95th percentile delay
+histogram_quantile(0.95, rate(jitterbuffer_delay_seconds_bucket[5m]))
+
+# Dropped packet rate
+rate(jitterbuffer_dropped_packets_total[5m])
+
+# Bytes processed per second
+rate(jitterbuffer_bytes_total[5m])
+```
+
+### Querying Metrics via Prometheus API
+
+```bash
+# Query all jitterbuffer metrics
+curl -G 'http://localhost:9090/api/v1/query' \
+    --data-urlencode 'query={__name__=~"jitterbuffer.*"}'
+
+# Query packet count
+curl -G 'http://localhost:9090/api/v1/query' \
+    --data-urlencode 'query=jitterbuffer_packet_count_total'
+
+# Query average delay
+curl -G 'http://localhost:9090/api/v1/query' \
+    --data-urlencode 'query=jitterbuffer_delay_avg_seconds'
+```
 
 ## 故障排除
 
