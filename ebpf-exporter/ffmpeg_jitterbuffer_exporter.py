@@ -263,8 +263,10 @@ class JitterBufferExporter:
             stats_map = self.bpf["jitterbuffer_stats"]
             
             current_time = time.time()
+            has_data = False
             
             for key, metrics in stats_map.items():
+                has_data = True
                 pid = key.pid
                 func_name = key.function_name.decode('utf-8', errors='ignore')
                 
@@ -320,6 +322,23 @@ class JitterBufferExporter:
                     pid=str(pid),
                     function=func_name
                 ).set(metrics.packet_count)
+            
+            # 如果沒有數據，創建默認的 metrics entries 以便 Prometheus 可以看到
+            if not has_data and self.target_pid:
+                # 使用目標 PID 和默認的 function 名稱
+                default_pid = str(self.target_pid)
+                default_functions = ['avcodec_send_packet', 'avcodec_receive_frame', 'unknown']
+                
+                for func_name in default_functions:
+                    # 初始化所有 metrics 為 0，確保 Prometheus 可以查詢到
+                    jitterbuffer_packet_count.labels(pid=default_pid, function=func_name)._value._value = 0
+                    jitterbuffer_dropped_packets.labels(pid=default_pid, function=func_name)._value._value = 0
+                    jitterbuffer_bytes_total.labels(pid=default_pid, function=func_name)._value._value = 0
+                    jitterbuffer_delay_min.labels(pid=default_pid, function=func_name).set(0)
+                    jitterbuffer_delay_max.labels(pid=default_pid, function=func_name).set(0)
+                    jitterbuffer_delay_avg.labels(pid=default_pid, function=func_name).set(0)
+                    jitterbuffer_buffer_size.labels(pid=default_pid, function=func_name).set(0)
+                    # Histogram 不需要初始化，它會自動顯示為 0
                 
         except Exception as e:
             print(f"Error collecting metrics: {e}")
