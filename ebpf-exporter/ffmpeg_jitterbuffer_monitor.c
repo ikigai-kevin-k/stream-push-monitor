@@ -176,3 +176,146 @@ int rtp_parse_return(struct pt_regs *ctx) {
     return probe_jitterbuffer_return(ctx, "rtp_parse_packet");
 }
 
+// FFmpeg 庫函數處理
+// avcodec_send_packet - 發送封包到解碼器
+int avcodec_send_packet_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "avcodec_send_packet");
+}
+
+int avcodec_send_packet_return(struct pt_regs *ctx) {
+    struct jitterbuffer_metrics *metrics;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 pid = pid_tgid >> 32;
+    u32 tid = (u32)pid_tgid;
+    
+    struct jitterbuffer_key key = {};
+    key.pid = pid;
+    key.tid = tid;
+    bpf_probe_read_kernel_str(&key.function_name, sizeof(key.function_name), "avcodec_send_packet");
+    
+    metrics = jitterbuffer_stats.lookup(&key);
+    if (metrics) {
+        metrics->packet_count++;
+        // 檢查返回值（0 表示成功，負數表示錯誤）
+        long ret = PT_REGS_RC(ctx);
+        if (ret < 0) {
+            metrics->dropped_packets++;
+        }
+    }
+    
+    return probe_jitterbuffer_return(ctx, "avcodec_send_packet");
+}
+
+// avcodec_receive_frame - 從解碼器接收幀
+int avcodec_receive_frame_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "avcodec_receive_frame");
+}
+
+int avcodec_receive_frame_return(struct pt_regs *ctx) {
+    struct jitterbuffer_metrics *metrics;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 pid = pid_tgid >> 32;
+    u32 tid = (u32)pid_tgid;
+    
+    struct jitterbuffer_key key = {};
+    key.pid = pid;
+    key.tid = tid;
+    bpf_probe_read_kernel_str(&key.function_name, sizeof(key.function_name), "avcodec_receive_frame");
+    
+    metrics = jitterbuffer_stats.lookup(&key);
+    if (metrics) {
+        // 檢查返回值（0 表示成功，負數表示錯誤）
+        long ret = PT_REGS_RC(ctx);
+        if (ret < 0) {
+            metrics->dropped_packets++;
+        }
+    }
+    
+    return probe_jitterbuffer_return(ctx, "avcodec_receive_frame");
+}
+
+// av_packet_alloc - 分配封包
+int av_packet_alloc_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "av_packet_alloc");
+}
+
+int av_packet_alloc_return(struct pt_regs *ctx) {
+    return probe_jitterbuffer_return(ctx, "av_packet_alloc");
+}
+
+// av_packet_ref - 引用封包
+int av_packet_ref_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "av_packet_ref");
+}
+
+int av_packet_ref_return(struct pt_regs *ctx) {
+    return probe_jitterbuffer_return(ctx, "av_packet_ref");
+}
+
+// av_packet_unref - 釋放封包
+int av_packet_unref_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "av_packet_unref");
+}
+
+int av_packet_unref_return(struct pt_regs *ctx) {
+    return probe_jitterbuffer_return(ctx, "av_packet_unref");
+}
+
+// av_bsf_send_packet - 發送封包到 bitstream filter
+int av_bsf_send_packet_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "av_bsf_send_packet");
+}
+
+int av_bsf_send_packet_return(struct pt_regs *ctx) {
+    struct jitterbuffer_metrics *metrics;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 pid = pid_tgid >> 32;
+    u32 tid = (u32)pid_tgid;
+    
+    struct jitterbuffer_key key = {};
+    key.pid = pid;
+    key.tid = tid;
+    bpf_probe_read_kernel_str(&key.function_name, sizeof(key.function_name), "av_bsf_send_packet");
+    
+    metrics = jitterbuffer_stats.lookup(&key);
+    if (metrics) {
+        metrics->packet_count++;
+        // 檢查返回值
+        long ret = PT_REGS_RC(ctx);
+        if (ret < 0) {
+            metrics->dropped_packets++;
+        }
+    }
+    
+    return probe_jitterbuffer_return(ctx, "av_bsf_send_packet");
+}
+
+// av_bsf_receive_packet - 從 bitstream filter 接收封包
+int av_bsf_receive_packet_entry(struct pt_regs *ctx) {
+    return probe_jitterbuffer_entry(ctx, "av_bsf_receive_packet");
+}
+
+int av_bsf_receive_packet_return(struct pt_regs *ctx) {
+    struct jitterbuffer_metrics *metrics;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 pid = pid_tgid >> 32;
+    u32 tid = (u32)pid_tgid;
+    
+    struct jitterbuffer_key key = {};
+    key.pid = pid;
+    key.tid = tid;
+    bpf_probe_read_kernel_str(&key.function_name, sizeof(key.function_name), "av_bsf_receive_packet");
+    
+    metrics = jitterbuffer_stats.lookup(&key);
+    if (metrics) {
+        metrics->packet_count++;
+        // 檢查返回值
+        long ret = PT_REGS_RC(ctx);
+        if (ret < 0) {
+            metrics->dropped_packets++;
+        }
+    }
+    
+    return probe_jitterbuffer_return(ctx, "av_bsf_receive_packet");
+}
+
