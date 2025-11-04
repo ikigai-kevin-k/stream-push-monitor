@@ -1,0 +1,13 @@
+# Prometheus 配置範例
+# 將此配置添加到您的 prometheus.yml 中
+
+scrape_configs:
+  # FFmpeg/SRS JitterBuffer Monitor
+  - job_name: 'ffmpeg-jitterbuffer'
+    static_configs:
+      - targets: ['localhost:9310']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: false
+
